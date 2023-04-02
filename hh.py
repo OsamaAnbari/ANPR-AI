@@ -1,19 +1,19 @@
 import os
 import sys
-import tarfile
-import zipfile
-from io import StringIO
-from matplotlib import pyplot as plt
 from PIL import Image
 from IPython.display import display
 import cv2
-#import mysql.connector
 import numpy as np # 1.20
 import pathlib
-from collections import defaultdict
 import csv
 import datetime
 
+#from collections import defaultdict
+#import mysql.connector
+#import tarfile
+#import zipfile
+#from io import StringIO
+#from matplotlib import pyplot as plt
 
 import tensorflow as tf # pip install --ignore-installed --upgrade tensorflow==2.5.0
 from tensorflow import keras
@@ -199,7 +199,7 @@ def find_contours(dimensions, img) :
             char = cv2.resize(char, (20, 40))
             
             cv2.rectangle(ii, (intX,intY), (intWidth+intX, intY+intHeight), (50,21,200), 2)
-            plt.imshow(ii, cmap='gray')
+            #plt.imshow(ii, cmap='gray')
 
             # Make result formatted for classification: invert colors
             char = cv2.subtract(255, char)
@@ -291,19 +291,18 @@ def OCR_CNN(char, model):
 
 
 
-SSD_Model_Path = "my_model_SSD\saved_model"
-CNN_Model_Path = "my_model_CNN"
-Labels_Path = "my_model_SSD\label_map.pbtxt"
-Detected_Plates_Path = "Detected_Plates"
-csv_filename = 'Detected_Plates/realtimeresults.csv'
+SSD_Model_Path = "..\ANPR\Model\my_model_SSD\saved_model"
+CNN_Model_Path = "..\ANPR\Model\my_model_CNN"
+Labels_Path = "..\ANPR\Model\my_model_SSD\label_map.pbtxt"
+Detected_Plates_Path = "..\ANPR\Model\Detected_Plates"
+csv_filename = '..\ANPR\Model\Detected_Plates/realtimeresults.csv'
 detection_threshold = 0.50
-camera_NO = 1
+camera_NO = 0
 i = 1
 OCR = 0
 OCR_Past = 0
 
-Image_Path = pathlib.Path('Plates_Ex/3.jpg')
-
+Image_Path = pathlib.Path('..\ANPR\Model\Plates_Ex/3.jpg')
 
 
 model_SSD = tf.saved_model.load(SSD_Model_Path)
