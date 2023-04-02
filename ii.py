@@ -3,7 +3,7 @@ import sys
 import tarfile
 import zipfile
 from io import StringIO
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from PIL import Image
 from IPython.display import display
 import cv2
