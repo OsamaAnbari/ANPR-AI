@@ -297,12 +297,12 @@ Labels_Path = "..\ANPR\Model\my_model_SSD\label_map.pbtxt"
 Detected_Plates_Path = "..\ANPR\Model\Detected_Plates"
 csv_filename = '..\ANPR\Model\Detected_Plates/realtimeresults.csv'
 detection_threshold = 0.50
-camera_NO = 0
+camera_NO = 1
 i = 1
 OCR = 0
 OCR_Past = 0
 
-Image_Path = pathlib.Path('..\ANPR\Model\Plates_Ex/3.jpg')
+#Image_Path = pathlib.Path('..\ANPR\Model\Plates_Ex/3.jpg')
 
 
 model_SSD = tf.saved_model.load(SSD_Model_Path)
