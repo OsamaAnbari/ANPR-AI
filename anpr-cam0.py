@@ -3,30 +3,39 @@ import sys
 from PIL import Image
 from IPython.display import display
 import cv2
-import numpy as np # 1.20
+import numpy as np
 import pathlib
 import csv
 import datetime
 
-#from collections import defaultdict
-#import mysql.connector
-#import tarfile
-#import zipfile
-#from io import StringIO
-#from matplotlib import pyplot as plt
-
-import tensorflow as tf # pip install --ignore-installed --upgrade tensorflow==2.5.0
+import tensorflow as tf
 from tensorflow import keras
 
-from object_detection.utils import ops as utils_ops  # python -m pip install .      protpbuf 3.2
+from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
+# ---------------------- Packages ----------------------
+#
+# opencv-python == 4.7.0
+# numpy == 1.24.2
+# tensorflow == 2.10.1
+#
+# ---------------------- Setup Object Detection ----------------------
+#
+# - Download protobuf and add <bin> to environments
+# - Clone Tensorflow Garden
+# - From within TensorFlow/models/research/ (protoc object_detection/protos/*.proto --python_out=.)
+# - From within TensorFlow/models/research/ (cp object_detection/packages/tf2/setup.py .) (python -m pip install .)
+
+
+
+
+# ---------------------- Detecting ----------------------------------------------------------------------
+
 def run_inference_for_single_image(model, image):
     image = np.asarray(image)
-    # The input needs to be a tensor, convert it using `tf.convert_to_tensor`.
     input_tensor = tf.convert_to_tensor(image)
-    # The model expects a batch of images, so add an axis with `tf.newaxis`.
     input_tensor = input_tensor[tf.newaxis,...]
     
     # Run inference
@@ -55,56 +64,7 @@ def run_inference_for_single_image(model, image):
         
     return output_dict
 
-def boxing(image,output_dict):
-    scores = list(filter(lambda x: x> detection_threshold, output_dict['detection_scores']))
-    boxes = output_dict['detection_boxes'][:len(scores)]
-    classes = output_dict['detection_classes'][:len(scores)]
-    width = image.shape[1]
-    height = image.shape[0]
-    region = 0;
-    for idx, box in enumerate(boxes):
-        roi = box*[height, width, height, width]
-        region = image[int(roi[0]):int(roi[2]),int(roi[1]):int(roi[3])]
-        region = Image.fromarray(region)
-    
-    Exec(region)
-
-def Exec(region):
-    if (region):
-        global OCR
-        global OCR_Past
-        global category_index
-        img = np.array(region)
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        char = segment_characters(img)
-        
-        if (len(char) >= 3):
-            OCR_Past_Past = OCR_Past
-            OCR_Past = OCR
-            OCR = OCR_CNN(char, model_CNN)
-            status = ' '#check_status(OCR)
-            try:
-                category_index = {1: {'id': 1, 'name': OCR+" "+status }}
-            except:
-                category_index = {1: {'id': 1, 'name': OCR}}
-            if True : #((OCR == OCR_Past) and (OCR != OCR_Past_Past)):
-                display(region)
-                save_res(img, OCR)
-                print(OCR)
-        else:
-            category_index = {1: {'id': 1, 'name': ' '}}
-
-def save_res(img, O):
-    global i
-    img_name = Detected_Plates_Path + '/' + f'{i}' + '-' + O + '.jpg' 
-    cv2.imwrite(img_name, img)
-    date = datetime.datetime.now()
-    i = i + 1
-    
-    with open(csv_filename, mode='a', newline='') as f:
-        csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow([date, O])
-
+# ---------------------- Detecting Real Time ----------------------------------------------------------------------
 
 def show_inference(model, frame):
     #take the frame from webcam feed and convert that to array
@@ -129,11 +89,9 @@ def show_inference(model, frame):
     
     return(image_np)
 
-
 def real_time():
     video_capture = cv2.VideoCapture(camera_NO)
     while True:
-        # Capture frame-by-frame
         re,frame = video_capture.read()
         Imagenp=show_inference(model_SSD, frame)
         cv2.imshow('object detection', cv2.resize(Imagenp, (800,600)))
@@ -141,17 +99,14 @@ def real_time():
             break
     video_capture.release()
     
+# ---------------------- Detecting From Image ----------------------------------------------------------------------
 
-
-# now we will create a function to show this model:
 def model_show(model, image_path):
     image = np.array(Image.open(image_path))
     
-    # Actual detection:
     result_dict = run_inference_for_single_image(model,image)
     boxing(image,result_dict)
     
-    # Visualize the Detection:
     vis_util.visualize_boxes_and_labels_on_image_array(
       image,
       result_dict['detection_boxes'],
@@ -164,13 +119,12 @@ def model_show(model, image_path):
     
     display(Image.fromarray(image))
 
-
+# ---------------------- OCR ----------------------------------------------------------------------
 
 def find_contours(dimensions, img) :
     
     ii = img.copy()
 
-    # Find all contours in the image
     cntrs, _ = cv2.findContours(img.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Retrieve potential dimensions
@@ -224,8 +178,6 @@ def find_contours(dimensions, img) :
 
     return img_res
 
-
-
 # Find characters in the resulting images
 def segment_characters(image) :
 
@@ -255,9 +207,6 @@ def segment_characters(image) :
 
     return char_list
 
-
-
-
 def fix_dimension(img): 
     new_img = np.zeros((28,28,3))
     for i in range(3):
@@ -272,41 +221,99 @@ def OCR_CNN(char, model):
         dic[i] = c
         
     output = []
-    for i,ch in enumerate(char): #iterating over the characters
+    for i,ch in enumerate(char):
         img_ = cv2.resize(ch, (28,28))
         img = fix_dimension(img_)
-        img = img.reshape(1,28,28,3) #preparing image for the model
-        y_ = model.predict(img, verbose = 0)[0]; #predicting the class
+        img = img.reshape(1,28,28,3)
+        y_ = model.predict(img, verbose = 0)[0];
         z=0
         for r in range(35):
             if (y_[r]==1.0):
                 z=r
         character = dic[z]
-        output.append(character) #storing the result in a list
+        output.append(character)
         
     plate_number = ''.join(output)
     
     return plate_number
 
+# ---------------------- Boxing and do_OCR ----------------------------------------------------------------------
 
-
-
-SSD_Model_Path = "..\ANPR\Model\my_model_SSD\saved_model"
-CNN_Model_Path = "..\ANPR\Model\my_model_CNN"
-Labels_Path = "..\ANPR\Model\my_model_SSD\label_map.pbtxt"
-Detected_Plates_Path = "..\ANPR\Model\Detected_Plates"
-csv_filename = '..\ANPR\Model\Detected_Plates/realtimeresults.csv'
-detection_threshold = 0.50
-camera_NO = 0
+# -------------
 i = 1
 OCR = 0
 OCR_Past = 0
+# -------------
 
-#Image_Path = pathlib.Path('..\ANPR\Model\Plates_Ex/3.jpg')
+def boxing(image,output_dict):
+    scores = list(filter(lambda x: x> detection_threshold, output_dict['detection_scores']))
+    boxes = output_dict['detection_boxes'][:len(scores)]
+    classes = output_dict['detection_classes'][:len(scores)]
+    width = image.shape[1]
+    height = image.shape[0]
+    region = 0;
+    for idx, box in enumerate(boxes):
+        roi = box*[height, width, height, width]
+        region = image[int(roi[0]):int(roi[2]),int(roi[1]):int(roi[3])]
+        region = Image.fromarray(region)
+    
+    do_OCR(region)
 
+def do_OCR(region):
+    if (region):
+        global OCR
+        global OCR_Past
+        global category_index
+        img = np.array(region)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        char = segment_characters(img)
+        
+        if (len(char) >= 3):
+            OCR_Past_Past = OCR_Past
+            OCR_Past = OCR
+            OCR = OCR_CNN(char, model_CNN)
+            status = ' '#check_status(OCR)
+            try:
+                category_index = {1: {'id': 1, 'name': OCR+" "+status }}
+            except:
+                category_index = {1: {'id': 1, 'name': OCR}}
+            if True : #((OCR == OCR_Past) and (OCR != OCR_Past_Past)):
+                display(region)
+                save_res(img, OCR)
+                print(OCR)
+        else:
+            category_index = {1: {'id': 1, 'name': ' '}}
+
+# ---------------------- Save and Check Database ----------------------------------------------------------------------
+
+def save_res(img, O):
+    global i
+    img_name = Detected_Plates_Path + '/' + f'{i}' + '-' + O + '.jpg' 
+    cv2.imwrite(img_name, img)
+    date = datetime.datetime.now()
+    i = i + 1
+    
+    with open(csv_filename, mode='a', newline='') as f:
+        csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow([date, O])
+
+# ---------------------- Configuration ----------------------------------------------------------------------
+
+SSD_Model_Path = "data\my_model_SSD\saved_model"
+Labels_Path = "data\my_model_SSD\label_map.pbtxt"
+CNN_Model_Path = "data\my_model_CNN"
+Detected_Plates_Path = "data\Croped Plates\Detected_Plates"
+csv_filename = 'data\Detected_Plates\Detected_Plates.csv'
+detection_threshold = 0.50
+camera_NO = 0
+
+# ---------------------- Import Models ----------------------------------------------------------------------
 
 model_SSD = tf.saved_model.load(SSD_Model_Path)
 category_index = label_map_util.create_category_index_from_labelmap(Labels_Path , use_display_name=True)
 model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
 
-real_time()
+# ------------------------------------------------------------------------------------------------------
+
+#real_time()
+model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
