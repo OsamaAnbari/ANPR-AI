@@ -292,12 +292,12 @@ def OCR_CNN(char, model):
 
 
 SSD_Model_Path = "..\ANPR\Model\my_model_SSD\saved_model"
-CNN_Model_Path = "..\ANPR\Model\my_model_CNN"
+CNN_Model_Path = "..\ANPR\Model\my_model_6" #my_model_CNN"
 Labels_Path = "..\ANPR\Model\my_model_SSD\label_map.pbtxt"
 Detected_Plates_Path = "..\ANPR\Model\Detected_Plates"
 csv_filename = '..\ANPR\Model\Detected_Plates/realtimeresults.csv'
 detection_threshold = 0.50
-camera_NO = 0
+camera_NO = 1
 i = 1
 OCR = 0
 OCR_Past = 0
@@ -309,4 +309,7 @@ model_SSD = tf.saved_model.load(SSD_Model_Path)
 category_index = label_map_util.create_category_index_from_labelmap(Labels_Path , use_display_name=True)
 model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
 
-real_time()
+#real_time()
+
+Image_Path = pathlib.Path('..\ANPR\Model\Plates_Ex/3.jpg')
+model_show(model_SSD, Image_Path)
