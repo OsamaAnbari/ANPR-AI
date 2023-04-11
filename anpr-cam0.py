@@ -1,3 +1,5 @@
+# ---------------------- Import ----------------------
+
 import os
 import sys
 from PIL import Image
@@ -7,6 +9,8 @@ import numpy as np
 import pathlib
 import csv
 import datetime
+import matplotlib.pyplot as plt
+import tkinter as tk
 
 import tensorflow as tf
 from tensorflow import keras
@@ -94,7 +98,7 @@ def real_time():
     while True:
         re,frame = video_capture.read()
         Imagenp=show_inference(model_SSD, frame)
-        cv2.imshow('object detection', cv2.resize(Imagenp, (800,600)))
+        cv2.imshow('Automatic Number Plate Recognition', cv2.resize(Imagenp, (800,600)))
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     video_capture.release()
@@ -117,7 +121,7 @@ def model_show(model, image_path):
       use_normalized_coordinates=True,
       line_thickness=2)
     
-    display(Image.fromarray(image))
+    display(Image.fromarray(image).show())
 
 # ---------------------- OCR ----------------------------------------------------------------------
 
@@ -305,7 +309,7 @@ CNN_Model_Path = "data\my_model_CNN"
 Detected_Plates_Path = "data\Croped Plates\Detected_Plates"
 csv_filename = 'data\Detected_Plates\Detected_Plates.csv'
 detection_threshold = 0.50
-camera_NO = 0
+camera_NO = 1
 
 # ---------------------- Import Models ----------------------------------------------------------------------
 
@@ -316,4 +320,25 @@ model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
 # ------------------------------------------------------------------------------------------------------
 
 #real_time()
-model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
+#model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
+
+def set_cam0():
+    camera_NO = 0
+
+def set_cam1():
+    camera_NO = 1
+
+root = tk.Tk()
+
+canvas1 = tk.Canvas(root, width = 300, height = 300,)
+canvas1.pack()
+
+#button1 = tk.Button(text='Camera 1', command=set_cam0, bg='brown',fg='white')
+#button2 = tk.Button(text='Camera 2', command=set_cam1, bg='brown',fg='white')
+button3 = tk.Button(text='Start', command=real_time, bg='brown',fg='white')
+
+#canvas1.create_window(150, 150, window=button1)
+#canvas1.create_window(150, 170, window=button2)
+canvas1.create_window(150, 150, window=button3)
+
+root.mainloop()
