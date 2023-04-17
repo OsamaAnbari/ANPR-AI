@@ -305,7 +305,7 @@ CNN_Model_Path = "data\my_model_CNN"
 Detected_Plates_Path = "data\Croped Plates\Detected_Plates"
 csv_filename = 'data\Detected_Plates\Detected_Plates.csv'
 detection_threshold = 0.50
-camera_NO = 0
+camera_NO = 1
 
 # ---------------------- Import Models ----------------------------------------------------------------------
 
@@ -315,5 +315,5 @@ model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
 
 # ------------------------------------------------------------------------------------------------------
 
-#real_time()
-model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
+real_time()
+#model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
