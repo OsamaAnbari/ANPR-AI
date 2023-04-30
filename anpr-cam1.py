@@ -1,29 +1,3 @@
-# ---------------------- Import ----------------------
-
-import os
-import sys
-from PIL import Image, ImageTk
-from IPython.display import display
-import cv2
-import numpy as np
-import pathlib
-import csv
-import datetime
-import matplotlib.pyplot as plt
-import tkinter as tk
-
-import tensorflow as tf
-from tensorflow import keras
-
-from object_detection.utils import ops as utils_ops
-from object_detection.utils import label_map_util
-from object_detection.utils import visualization_utils as vis_util
-
-import tkinter
-from tkinter import *
-from tkinter import ttk
-from PIL import Image, ImageTk
-
 # ---------------------- Packages ----------------------
 #
 # opencv-python == 4.7.0
@@ -37,8 +11,105 @@ from PIL import Image, ImageTk
 # - From within TensorFlow/models/research/ (protoc object_detection/protos/*.proto --python_out=.)
 # - From within TensorFlow/models/research/ (cp object_detection/packages/tf2/setup.py .) (python -m pip install .)
 
+# ---------------------- Configuration and Paths ----------------------------------------------------------------------
 
+global video_capture
+global camera_NO
 
+SSD_Model_Path = "data/my_model_SSD/saved_model"
+Labels_Path = "data/my_model_SSD/label_map.pbtxt"
+CNN_Model_Path = "data/my_model_CNN"
+Detected_Plates_Path = "data/Detected_Plates/Croped Plates"
+csv_filename = 'data/Detected_PlateszDetected_Plates.csv'
+detection_threshold = 0.50
+camera_NO = 0
+
+# ---------------------- Import Models ----------------------------------------------------------------------
+
+def models():
+    global model_SSD
+    global category_index
+    global model_CNN
+
+    model_SSD = tf.saved_model.load(SSD_Model_Path)
+    category_index = label_map_util.create_category_index_from_labelmap(Labels_Path , use_display_name=True)
+    model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
+
+# ---------------------- Welcome GUI ----------------------------------------------------------------------
+
+import tkinter
+from tkinter import *
+from tkinter import ttk
+from PIL import Image, ImageTk
+
+welcome=tkinter.Tk()
+#welcome.config(bg='#c2def0')
+welcome.title("Automatic Number Plate Detector")
+
+welcome_message = "ANPR System"
+developed_massege = "Osama Anbari\nAbdullah Alsayyed"
+
+welcomee=tkinter.Label(welcome,text="Welcome To", borderwidth=0, fg='#567', font=("Dubai", 45))
+welcomee.grid(row=0,column=0,pady=(30,0),padx=(50,50))
+
+welcome_label=tkinter.Label(welcome,text=welcome_message, borderwidth=0, fg='#567', font=("Dubai bold", 45))
+welcome_label.grid(row=1,column=0,pady=(0,10),padx=(50,50))
+
+developedby=tkinter.Label(welcome,text="Developed by", fg='#b8002b', font=("Dubai", 10))
+developedby.grid(row=2,column=0,pady=(30,0),padx=(10,10))
+
+developed=tkinter.Label(welcome,text=developed_massege, fg='#b8002b', font=("Dubai", 20))
+developed.grid(row=3,column=0,pady=(5,10),padx=(10,10))
+
+# ---------------------- Import packages ----------------------
+
+def importt():
+
+    #global welcome_label
+    #welcome_label.config(text = "Loading ...")
+
+    global os
+    global sys
+    global Image, ImageTk
+    global display
+    global cv2
+    global np
+    global pathlib
+    global csv
+    global datetime
+    global plt
+    global tk
+    global tf
+    global keras
+    global utils_ops
+    global label_map_util
+    global vis_util
+    
+    import os
+    import sys
+    from PIL import Image, ImageTk
+    from IPython.display import display
+    import cv2
+    import numpy as np
+    import pathlib
+    import csv
+    import datetime
+    import matplotlib.pyplot as plt
+    import tkinter as tk
+
+    import tensorflow as tf
+    from tensorflow import keras
+
+    from object_detection.utils import ops as utils_ops
+    from object_detection.utils import label_map_util
+    from object_detection.utils import visualization_utils as vis_util
+    
+    models()
+    welcome.destroy()
+
+btn_on=tkinter.Button(welcome,text="Start",command=importt,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
+btn_on.grid(row=4,column=0,pady=(30,30),padx=(10,10))
+welcome.mainloop()
 
 # ---------------------- Detecting ----------------------------------------------------------------------
 
@@ -335,26 +406,9 @@ def save_res(img, O):
         csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow([date, O])
 
-# ---------------------- Configuration and Paths ----------------------------------------------------------------------
 
-global video_capture
-global camera_NO
 
-SSD_Model_Path = "data/my_model_SSD/saved_model"
-Labels_Path = "data/my_model_SSD/label_map.pbtxt"
-CNN_Model_Path = "data/my_model_CNN"
-Detected_Plates_Path = "data/Detected_Plates/Croped Plates"
-csv_filename = 'data/Detected_PlateszDetected_Plates.csv'
-detection_threshold = 0.50
-camera_NO = 1
-
-# ---------------------- Import Models ----------------------------------------------------------------------
-
-model_SSD = tf.saved_model.load(SSD_Model_Path)
-category_index = label_map_util.create_category_index_from_labelmap(Labels_Path , use_display_name=True)
-model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
-
-# ---------------------- GUI ----------------------------------------------------------------------
+# ---------------------- Main GUI Functions ----------------------------------------------------------------------
 
 def box_in_interface(region):
     region = region.resize((170,75))
@@ -384,7 +438,8 @@ def stop():
     global video_capture
     video_capture.release()
     cv2.destroyAllWindows()
-    print("Stopped!")
+    start_frame()
+    #print("Stopped!")
 
 def start_frame():
     frame=np.random.randint(0,255,[500,500,3],dtype='uint8')
@@ -393,7 +448,7 @@ def start_frame():
     frame_label.image=img_update
     frame_label.update()
 
-# ------------------------------------------------------------------------------------------------------
+# ---------------------- Main GUI ----------------------------------------------------------------------------
 
 main_interface=tkinter.Tk()
 main_interface.config(bg='#c2def0')
@@ -421,4 +476,5 @@ btn_off.grid(row=28,column=30,columnspan=6,pady=(0,10),padx=(0,10))
 btn_swtch=tkinter.Button(main_interface,text="Switch camera",command=switch_cam,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
 btn_swtch.grid(row=29,column=30,columnspan=6,pady=(0,10),padx=(0,10))
 
+real_time()
 main_interface.mainloop()
