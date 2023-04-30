@@ -2,7 +2,7 @@
 
 import os
 import sys
-from PIL import Image
+from PIL import Image, ImageTk
 from IPython.display import display
 import cv2
 import numpy as np
@@ -18,6 +18,11 @@ from tensorflow import keras
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
+
+import tkinter
+from tkinter import *
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 # ---------------------- Packages ----------------------
 #
@@ -94,14 +99,34 @@ def show_inference(model, frame):
     return(image_np)
 
 def real_time():
+    global video_capture
+    global camera_NO
     video_capture = cv2.VideoCapture(camera_NO)
     while True:
-        re,frame = video_capture.read()
+        ret,frame = video_capture.read()
         Imagenp=show_inference(model_SSD, frame)
-        cv2.imshow('Automatic Number Plate Recognition', cv2.resize(Imagenp, (800,600)))
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+
+        img_update = ImageTk.PhotoImage(Image.fromarray(Imagenp))
+        paneeli_image.configure(image=img_update)
+        paneeli_image.image=img_update
+        paneeli_image.update()
+
+        if not ret:
+            print("failed to grab frame")
             break
-    video_capture.release()
+
+        k = cv2.waitKey(1)
+        if k%256 == 27:
+            # ESC pressed
+            print("Escape hit, closing...")
+
+            video_capture.release()
+            cv2.destroyAllWindows()
+            break
+        #cv2.imshow('Automatic Number Plate Recognition', cv2.resize(Imagenp, (800,600)))
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #    break
+    #video_capture.release()
     
 # ---------------------- Detecting From Image ----------------------------------------------------------------------
 
@@ -303,12 +328,13 @@ def save_res(img, O):
 
 # ---------------------- Configuration ----------------------------------------------------------------------
 
-SSD_Model_Path = "data\my_model_SSD\saved_model"
-Labels_Path = "data\my_model_SSD\label_map.pbtxt"
-CNN_Model_Path = "data\my_model_CNN"
-Detected_Plates_Path = "data\Croped Plates\Detected_Plates"
-csv_filename = 'data\Detected_Plates\Detected_Plates.csv'
+SSD_Model_Path = "D:/Projects/Machine Learning/anpr-rasp/data/my_model_SSD/saved_model" #"data/my_model_SSD/saved_model"
+Labels_Path = "D:/Projects/Machine Learning/anpr-rasp/data/my_model_SSD/label_map.pbtxt"
+CNN_Model_Path = "D:/Projects/Machine Learning/anpr-rasp/data/my_model_CNN"
+Detected_Plates_Path = "D:/Projects/Machine Learning/anpr-rasp/data/Detected_Plates/Croped Plates"
+csv_filename = 'D:/Projects/Machine Learning/anpr-rasp/data/Detected_PlateszDetected_Plates.csv'
 detection_threshold = 0.50
+global camera_NO
 camera_NO = 1
 
 # ---------------------- Import Models ----------------------------------------------------------------------
@@ -320,25 +346,47 @@ model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
 # ------------------------------------------------------------------------------------------------------
 
 #real_time()
-#model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
+#model_show(model_SSD, '../ANPR/Model/Plates_Ex/2.jpg')
 
-def set_cam0():
-    camera_NO = 0
+def switch_cam():
+    global camera_NO
+    stop()
 
-def set_cam1():
-    camera_NO = 1
+    if camera_NO == 0:
+        camera_NO = 1
+    else:
+        camera_NO = 0
 
-root = tk.Tk()
+    real_time()
 
-canvas1 = tk.Canvas(root, width = 300, height = 300,)
-canvas1.pack()
+main_interface=tkinter.Tk()
+main_interface.title("Automatic Number Plate Detector")
 
-#button1 = tk.Button(text='Camera 1', command=set_cam0, bg='brown',fg='white')
-#button2 = tk.Button(text='Camera 2', command=set_cam1, bg='brown',fg='white')
-button3 = tk.Button(text='Start', command=real_time, bg='brown',fg='white')
+frame=np.random.randint(0,255,[100,100,3],dtype='uint8')
+#img = ImageTk.PhotoImage(Image.fromarray(frame))
 
-#canvas1.create_window(150, 150, window=button1)
-#canvas1.create_window(150, 170, window=button2)
-canvas1.create_window(150, 150, window=button3)
+paneeli_image=tkinter.Label(main_interface)
+paneeli_image.grid(row=0,column=0,columnspan=10,pady=1,padx=10)
 
-root.mainloop()
+message=" "
+paneeli_text=tkinter.Label(main_interface,text=message)
+paneeli_text.grid(row=1,column=6,pady=1,padx=10)
+
+global video_capture
+
+def stop():
+    global video_capture
+    video_capture.release()
+    cv2.destroyAllWindows()
+    print("Stopped!")
+
+btn_on=tkinter.Button(main_interface,text="Start",command=real_time,height=2)
+btn_on.grid(row=1,column=0,columnspan=1,pady=10,padx=10)
+
+btn_off=tkinter.Button(main_interface,text="Stop",command=stop,height=2)
+btn_off.grid(row=1,column=1,columnspan=1,pady=10,padx=10)
+
+btn_swtch=tkinter.Button(main_interface,text="Switch camera",command=switch_cam,height=2)
+btn_swtch.grid(row=1,column=2,columnspan=1,pady=10,padx=10)
+
+main_interface.mainloop()
