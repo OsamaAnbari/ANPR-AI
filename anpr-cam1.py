@@ -1,12 +1,16 @@
+# ---------------------- Import ----------------------
+
 import os
 import sys
-from PIL import Image
+from PIL import Image, ImageTk
 from IPython.display import display
 import cv2
 import numpy as np
 import pathlib
 import csv
 import datetime
+import matplotlib.pyplot as plt
+import tkinter as tk
 
 import tensorflow as tf
 from tensorflow import keras
@@ -14,6 +18,11 @@ from tensorflow import keras
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
+
+import tkinter
+from tkinter import *
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 # ---------------------- Packages ----------------------
 #
@@ -90,14 +99,32 @@ def show_inference(model, frame):
     return(image_np)
 
 def real_time():
+    global video_capture
+    global camera_NO
     video_capture = cv2.VideoCapture(camera_NO)
     while True:
-        re,frame = video_capture.read()
+        ret,frame = video_capture.read()
         Imagenp=show_inference(model_SSD, frame)
-        cv2.imshow('object detection', cv2.resize(Imagenp, (800,600)))
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+
+        frame_in_interface(Imagenp)
+
+        if not ret:
+            print("failed to grab frame")
             break
-    video_capture.release()
+
+        k = cv2.waitKey(1)
+        if k%256 == 27:
+            # ESC pressed
+            print("Escape hit, closing...")
+
+            video_capture.release()
+            cv2.destroyAllWindows()
+            break
+
+        #cv2.imshow('Automatic Number Plate Recognition', cv2.resize(Imagenp, (800,600)))
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #    break
+    #video_capture.release()
     
 # ---------------------- Detecting From Image ----------------------------------------------------------------------
 
@@ -117,7 +144,7 @@ def model_show(model, image_path):
       use_normalized_coordinates=True,
       line_thickness=2)
     
-    display(Image.fromarray(image))
+    display(Image.fromarray(image).show())
 
 # ---------------------- OCR ----------------------------------------------------------------------
 
@@ -249,15 +276,22 @@ def boxing(image,output_dict):
     scores = list(filter(lambda x: x> detection_threshold, output_dict['detection_scores']))
     boxes = output_dict['detection_boxes'][:len(scores)]
     classes = output_dict['detection_classes'][:len(scores)]
-    width = image.shape[1]
-    height = image.shape[0]
-    region = 0;
-    for idx, box in enumerate(boxes):
-        roi = box*[height, width, height, width]
-        region = image[int(roi[0]):int(roi[2]),int(roi[1]):int(roi[3])]
-        region = Image.fromarray(region)
     
-    do_OCR(region)
+    region = 0
+    for idx, box in enumerate(boxes):
+        
+        check = [box[2]-box[0], box[3]-box[1]]
+        #print(check[0], check[1])
+
+        if(check[0]>=0.2 and check[1]>=0.5):
+            width = image.shape[1]
+            height = image.shape[0]
+            roi = box*[height, width, height, width]
+
+            region = image[int(roi[0]):int(roi[2]),int(roi[1]):int(roi[3])]
+            region = Image.fromarray(region)
+
+            do_OCR(region)
 
 def do_OCR(region):
     if (region):
@@ -268,7 +302,7 @@ def do_OCR(region):
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         char = segment_characters(img)
         
-        if (len(char) >= 3):
+        if (len(char) >= 5):
             OCR_Past_Past = OCR_Past
             OCR_Past = OCR
             OCR = OCR_CNN(char, model_CNN)
@@ -277,12 +311,16 @@ def do_OCR(region):
                 category_index = {1: {'id': 1, 'name': OCR+" "+status }}
             except:
                 category_index = {1: {'id': 1, 'name': OCR}}
+
             if True : #((OCR == OCR_Past) and (OCR != OCR_Past_Past)):
-                display(region)
+                #display(region)
+                box_in_interface(region)
+                OCR_label.config(text = OCR)
+
                 save_res(img, OCR)
-                print(OCR)
-        else:
-            category_index = {1: {'id': 1, 'name': ' '}}
+                #print(OCR)
+            else:
+                category_index = {1: {'id': 1, 'name': ' '}}
 
 # ---------------------- Save and Check Database ----------------------------------------------------------------------
 
@@ -297,13 +335,16 @@ def save_res(img, O):
         csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow([date, O])
 
-# ---------------------- Configuration ----------------------------------------------------------------------
+# ---------------------- Configuration and Paths ----------------------------------------------------------------------
 
-SSD_Model_Path = "data\my_model_SSD\saved_model"
-Labels_Path = "data\my_model_SSD\label_map.pbtxt"
-CNN_Model_Path = "data\my_model_CNN"
-Detected_Plates_Path = "data\Croped Plates\Detected_Plates"
-csv_filename = 'data\Detected_Plates\Detected_Plates.csv'
+global video_capture
+global camera_NO
+
+SSD_Model_Path = "data/my_model_SSD/saved_model"
+Labels_Path = "data/my_model_SSD/label_map.pbtxt"
+CNN_Model_Path = "data/my_model_CNN"
+Detected_Plates_Path = "data/Detected_Plates/Croped Plates"
+csv_filename = 'data/Detected_PlateszDetected_Plates.csv'
 detection_threshold = 0.50
 camera_NO = 1
 
@@ -313,7 +354,71 @@ model_SSD = tf.saved_model.load(SSD_Model_Path)
 category_index = label_map_util.create_category_index_from_labelmap(Labels_Path , use_display_name=True)
 model_CNN = keras.models.load_model(CNN_Model_Path , compile=False)
 
+# ---------------------- GUI ----------------------------------------------------------------------
+
+def box_in_interface(region):
+    region = region.resize((170,75))
+    img_update = ImageTk.PhotoImage(region)
+    croped_image.configure(image=img_update)
+    croped_image.image=img_update
+    croped_image.update()
+
+def frame_in_interface(Imagenp):
+    img_update = ImageTk.PhotoImage(Image.fromarray(Imagenp))
+    frame_label.configure(image=img_update)
+    frame_label.image=img_update
+    frame_label.update()
+
+def switch_cam():
+    global camera_NO
+    stop()
+
+    if camera_NO == 0:
+        camera_NO = 1
+    else:
+        camera_NO = 0
+
+    real_time()
+
+def stop():
+    global video_capture
+    video_capture.release()
+    cv2.destroyAllWindows()
+    print("Stopped!")
+
+def start_frame():
+    frame=np.random.randint(0,255,[500,500,3],dtype='uint8')
+    img_update = ImageTk.PhotoImage(Image.fromarray(frame))
+    frame_label.configure(image=img_update)
+    frame_label.image=img_update
+    frame_label.update()
+
 # ------------------------------------------------------------------------------------------------------
 
-real_time()
-#model_show(model_SSD, '..\ANPR\Model\Plates_Ex/2.jpg')
+main_interface=tkinter.Tk()
+main_interface.config(bg='#c2def0')
+main_interface.title("Automatic Number Plate Detector")
+main_interface.iconbitmap('data/logo.ico')
+
+frame_label=tkinter.Label(main_interface)
+frame_label.grid(row=0,column=0,rowspan=30,columnspan=30,pady=10,padx=10)
+
+start_frame()
+
+croped_image=tkinter.Label(main_interface)
+croped_image.grid(row=0,column=30,rowspan=2,columnspan=6,pady=10,padx=(0,10))
+
+message=""
+OCR_label=tkinter.Label(main_interface,text=message, borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
+OCR_label.grid(row=2,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+
+btn_on=tkinter.Button(main_interface,text="Start",command=real_time,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
+btn_on.grid(row=27,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+
+btn_off=tkinter.Button(main_interface,text="Stop",command=stop,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
+btn_off.grid(row=28,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+
+btn_swtch=tkinter.Button(main_interface,text="Switch camera",command=switch_cam,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
+btn_swtch.grid(row=29,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+
+main_interface.mainloop()
