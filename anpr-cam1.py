@@ -11,6 +11,13 @@
 # - From within TensorFlow/models/research/ (protoc object_detection/protos/*.proto --python_out=.)
 # - From within TensorFlow/models/research/ (cp object_detection/packages/tf2/setup.py .) (python -m pip install .)
 
+#git clone --depth 1 https://github.com/tensorflow/models
+#sudo apt install -y protobuf-compiler
+#cd models/research/
+#protoc object_detection/protos/*.proto --python_out=.
+#cp object_detection/packages/tf2/setup.py .
+#python -m pip install .
+
 # ---------------------- Configuration and Paths ----------------------------------------------------------------------
 
 global video_capture
