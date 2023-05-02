@@ -91,6 +91,8 @@ def importt():
     global utils_ops
     global label_map_util
     global vis_util
+    global MongoClient
+    global datetime
     
     import os
     import sys
@@ -103,6 +105,8 @@ def importt():
     import datetime
     import matplotlib.pyplot as plt
     import tkinter as tk
+    from pymongo import MongoClient
+    from datetime import datetime
 
     import tensorflow as tf
     from tensorflow import keras
@@ -395,15 +399,16 @@ def do_OCR(region):
                 box_in_interface(region)
                 OCR_label.config(text = OCR)
 
-                save_res(img, OCR)
+                check_database(OCR)
+                save_database(img, OCR)
                 #print(OCR)
             else:
                 category_index = {1: {'id': 1, 'name': ' '}}
 
 # ---------------------- Save and Check Database ----------------------------------------------------------------------
 
-def save_res(img, O):
-    global i
+def save_database(img, O):
+    """ global i
     img_name = Detected_Plates_Path + '/' + f'{i}' + '-' + O + '.jpg' 
     cv2.imwrite(img_name, img)
     date = datetime.datetime.now()
@@ -411,9 +416,31 @@ def save_res(img, O):
     
     with open(csv_filename, mode='a', newline='') as f:
         csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow([date, O])
+        csv_writer.writerow([date, O]) """
 
+    data = {
+        "plate" : O,
+        "date" : str(datetime.now().strftime("%d/%m/%Y")),
+        "time" : str(datetime.now().strftime("%H:%M"))
+    }
 
+    try:
+        cars_logs_coll.insert_one(data)
+    except:
+        pass
+
+def check_database(O):
+    a = ''
+    c = ''
+    try:
+        a = str(cars_coll.find_one({"plate" : O})["model"])
+        c = '#2eab1b'
+    except:
+        a = "Car is not registered"
+        c = '#ab1b1b'
+    
+    status_label.config(text=a, bg=c)
+    
 
 # ---------------------- Main GUI Functions ----------------------------------------------------------------------
 
@@ -465,6 +492,14 @@ main_interface.iconbitmap('data/logo.ico')
 frame_label=tkinter.Label(main_interface)
 frame_label.grid(row=0,column=0,rowspan=30,columnspan=30,pady=10,padx=10)
 
+try:
+    client = MongoClient("mongodb://127.0.0.1:27017")
+    database = client["anpr-db"]
+    cars_coll = database["cars"]
+    cars_logs_coll = database["cars_logs"]
+except:
+    pass
+
 start_frame()
 
 croped_image=tkinter.Label(main_interface)
@@ -473,6 +508,9 @@ croped_image.grid(row=0,column=30,rowspan=2,columnspan=6,pady=10,padx=(0,10))
 message=""
 OCR_label=tkinter.Label(main_interface,text=message, borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
 OCR_label.grid(row=2,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+
+status_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
+status_label.grid(row=3,column=30,columnspan=6,pady=(0,10),padx=(0,10))
 
 btn_on=tkinter.Button(main_interface,text="Start",command=real_time,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
 btn_on.grid(row=27,column=30,columnspan=6,pady=(0,10),padx=(0,10))
