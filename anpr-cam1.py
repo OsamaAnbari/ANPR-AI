@@ -180,9 +180,14 @@ def show_inference(model, frame):
     
     return(image_np)
 
+global stopp
+stopp = False
+
 def real_time():
     global video_capture
     global camera_NO
+    global stopp
+    stopp = False
     video_capture = cv2.VideoCapture(camera_NO)
     while True:
         ret,frame = video_capture.read()
@@ -191,17 +196,13 @@ def real_time():
         frame_in_interface(Imagenp)
 
         if not ret:
-            print("failed to grab frame")
             break
-
-        k = cv2.waitKey(1)
-        if k%256 == 27:
-            # ESC pressed
-            print("Escape hit, closing...")
-
+        if stopp:
             video_capture.release()
             cv2.destroyAllWindows()
             break
+
+        #k = cv2.waitKey(1)
 
         #cv2.imshow('Automatic Number Plate Recognition', cv2.resize(Imagenp, (800,600)))
         #if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -334,7 +335,7 @@ def OCR_CNN(char, model):
         img_ = cv2.resize(ch, (28,28))
         img = fix_dimension(img_)
         img = img.reshape(1,28,28,3)
-        y_ = model.predict(img, verbose = 0)[0];
+        y_ = model.predict(img, verbose = 0)[0]
         z=0
         for r in range(35):
             if (y_[r]==1.0):
@@ -374,72 +375,71 @@ def boxing(image,output_dict):
             region = Image.fromarray(region)
 
             do_OCR(region)
+        else:
+            global category_index
+            category_index = {1: {'id': 1, 'name': 'Not Recognized'}}
 
 def do_OCR(region):
     if (region):
-        global OCR
-        global OCR_Past
-        global category_index
         img = np.array(region)
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         char = segment_characters(img)
         
         if (len(char) >= 5):
+            global OCR
+            global OCR_Past
+            global category_index
+
             OCR_Past_Past = OCR_Past
             OCR_Past = OCR
             OCR = OCR_CNN(char, model_CNN)
-            status = ' '#check_status(OCR)
-            try:
-                category_index = {1: {'id': 1, 'name': OCR+" "+status }}
-            except:
-                category_index = {1: {'id': 1, 'name': OCR}}
 
-            if True : #((OCR == OCR_Past) and (OCR != OCR_Past_Past)):
-                #display(region)
-                box_in_interface(region)
-                OCR_label.config(text = OCR)
-
-                check_database(OCR)
-                save_database(img, OCR)
-                #print(OCR)
+            if (OCR == OCR_Past):
+                if (OCR != OCR_Past_Past):
+                    #display(region)
+                    status = check_database(OCR)
+                    category_index = {1: {'id': 1, 'name': OCR+" "+status }}
+                    box_in_interface(region)
+                    OCR_label.config(text = OCR)
+                    save_database(OCR, status)
             else:
-                category_index = {1: {'id': 1, 'name': ' '}}
+                category_index = {1: {'id': 1, 'name': 'Not Detected'}}
 
 # ---------------------- Save and Check Database ----------------------------------------------------------------------
 
-def save_database(img, O):
-    """ global i
-    img_name = Detected_Plates_Path + '/' + f'{i}' + '-' + O + '.jpg' 
-    cv2.imwrite(img_name, img)
-    date = datetime.datetime.now()
-    i = i + 1
-    
-    with open(csv_filename, mode='a', newline='') as f:
-        csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow([date, O]) """
+global last_saved
+last_saved = ' '
+def save_database(O, status):
+    global last_saved
 
-    data = {
-        "plate" : O,
-        "date" : str(datetime.now().strftime("%d/%m/%Y")),
-        "time" : str(datetime.now().strftime("%H:%M"))
-    }
+    if (last_saved != O):
+        last_saved = O
+        data = {
+            "plate" : O,
+            "date" : str(datetime.now().strftime("%d/%m/%Y")),
+            "time" : str(datetime.now().strftime("%H:%M")),
+            "status" : status
+        }
 
-    try:
-        cars_logs_coll.insert_one(data)
-    except:
-        pass
+        try:
+            cars_logs_coll.insert_one(data)
+            saved_label.config(text='Saved in Database')
+        except:
+            saved_label.config(text='Database Error')
+
 
 def check_database(O):
-    a = ''
-    c = ''
     try:
         a = str(cars_coll.find_one({"plate" : O})["model"])
         c = '#2eab1b'
+        r = 'Registered'
     except:
         a = "Car is not registered"
         c = '#ab1b1b'
+        r = 'Not Registered'
     
     status_label.config(text=a, bg=c)
+    return r
     
 
 # ---------------------- Main GUI Functions ----------------------------------------------------------------------
@@ -470,10 +470,9 @@ def switch_cam():
 
 def stop():
     global video_capture
-    video_capture.release()
-    cv2.destroyAllWindows()
+    global stopp
     start_frame()
-    #print("Stopped!")
+    stopp = True
 
 def start_frame():
     frame=np.random.randint(0,255,[500,500,3],dtype='uint8')
@@ -511,6 +510,9 @@ OCR_label.grid(row=2,column=30,columnspan=6,pady=(0,10),padx=(0,10))
 
 status_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
 status_label.grid(row=3,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+
+saved_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
+saved_label.grid(row=4,column=30,columnspan=6,pady=(0,10),padx=(0,10))
 
 btn_on=tkinter.Button(main_interface,text="Start",command=real_time,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
 btn_on.grid(row=27,column=30,columnspan=6,pady=(0,10),padx=(0,10))
