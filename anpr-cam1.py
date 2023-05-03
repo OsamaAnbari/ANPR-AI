@@ -52,6 +52,7 @@ from PIL import Image, ImageTk
 welcome=tkinter.Tk()
 #welcome.config(bg='#c2def0')
 welcome.title("Automatic Number Plate Detector")
+welcome.iconbitmap('data/logo.ico')
 
 welcome_message = "ANPR System"
 developed_massege = "Osama Anbari\nAbdullah Alsayyed"
@@ -59,21 +60,29 @@ developed_massege = "Osama Anbari\nAbdullah Alsayyed"
 welcomee=tkinter.Label(welcome,text="Welcome To", borderwidth=0, fg='#567', font=("Dubai", 45))
 welcomee.grid(row=0,column=0,pady=(30,0),padx=(50,50))
 
+global welcome_label
 welcome_label=tkinter.Label(welcome,text=welcome_message, borderwidth=0, fg='#567', font=("Dubai bold", 45))
 welcome_label.grid(row=1,column=0,pady=(0,10),padx=(50,50))
 
-developedby=tkinter.Label(welcome,text="Developed by", fg='#b8002b', font=("Dubai", 10))
-developedby.grid(row=2,column=0,pady=(30,0),padx=(10,10))
+developedby=tkinter.Label(welcome,text="Developed by", fg='#b8002b', font=("Dubai", 7))
+developedby.grid(row=3,column=0,pady=(30,0),padx=(10,10))
 
-developed=tkinter.Label(welcome,text=developed_massege, fg='#b8002b', font=("Dubai", 20))
-developed.grid(row=3,column=0,pady=(5,10),padx=(10,10))
+developed=tkinter.Label(welcome,text=developed_massege, fg='#b8002b', font=("Dubai", 10))
+developed.grid(row=4,column=0,pady=(2,10),padx=(10,10))
 
 # ---------------------- Import packages ----------------------
 
-def importt():
+def start():
+    welcome_label.config(text = "Loading ...", font=("Dubai", 25))
+    welcomee.config(text="please Wait")
+    welcome_label.update()
+    welcomee.update()
+    btn_on.destroy()
+    btn_on.update()
 
-    #global welcome_label
-    #welcome_label.config(text = "Loading ...")
+    importt()
+
+def importt():
 
     global os
     global sys
@@ -118,8 +127,8 @@ def importt():
     models()
     welcome.destroy()
 
-btn_on=tkinter.Button(welcome,text="Start",command=importt,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
-btn_on.grid(row=4,column=0,pady=(30,30),padx=(10,10))
+btn_on=tkinter.Button(welcome,text="Start",command=start,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
+btn_on.grid(row=2,column=0,pady=(30,30),padx=(10,10))
 welcome.mainloop()
 
 # ---------------------- Detecting ----------------------------------------------------------------------
@@ -400,7 +409,8 @@ def do_OCR(region):
                     status = check_database(OCR)
                     category_index = {1: {'id': 1, 'name': OCR+" "+status }}
                     box_in_interface(region)
-                    OCR_label.config(text = OCR)
+                    OCR_label.config(text = OCR,bg='#801d21')
+                    OCR_label.update()
                     save_database(OCR, status)
             else:
                 category_index = {1: {'id': 1, 'name': 'Not Detected'}}
@@ -421,24 +431,30 @@ def save_database(O, status):
             "status" : status
         }
 
+        my_table.insert(parent='', index='end', values=(O, data["date"], data["time"], status))
+        my_table.pack()
+
         try:
             cars_logs_coll.insert_one(data)
-            saved_label.config(text='Saved in Database')
+            saved_label.config(text='Saved in Database',bg='#17ad30')
+            saved_label.update()
         except:
-            saved_label.config(text='Database Error')
+            saved_label.config(text='Database Error',bg='#cf1919')
+            saved_label.update()
 
 
 def check_database(O):
     try:
         a = str(cars_coll.find_one({"plate" : O})["model"])
-        c = '#2eab1b'
+        c = '#17ad30'
         r = 'Registered'
     except:
-        a = "Car is not registered"
-        c = '#ab1b1b'
+        a = "Not registered"
+        c = '#cf1919'
         r = 'Not Registered'
     
     status_label.config(text=a, bg=c)
+    status_label.update()
     return r
     
 
@@ -475,7 +491,7 @@ def stop():
     stopp = True
 
 def start_frame():
-    frame=np.random.randint(0,255,[500,500,3],dtype='uint8')
+    frame = np.random.randint(169,170,[500,500,3],dtype='uint8')
     img_update = ImageTk.PhotoImage(Image.fromarray(frame))
     frame_label.configure(image=img_update)
     frame_label.image=img_update
@@ -502,26 +518,61 @@ except:
 start_frame()
 
 croped_image=tkinter.Label(main_interface)
-croped_image.grid(row=0,column=30,rowspan=2,columnspan=6,pady=10,padx=(0,10))
+croped_image.grid(row=0,column=30,rowspan=3,columnspan=6,pady=(10,5),padx=(0,10))
 
-message=""
-OCR_label=tkinter.Label(main_interface,text=message, borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
-OCR_label.grid(row=2,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+OCR_label=tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", fg='White', font=("Arial", 30))
+OCR_label.grid(row=3,column=30,rowspan=2,columnspan=6,pady=(0,5),padx=(0,10))
 
-status_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
-status_label.grid(row=3,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+status_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", fg='White', font=("Arial", 15))
+status_label.grid(row=5,column=30,rowspan=2,columnspan=6,pady=(0,5),padx=(0,10))
 
-saved_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", bg='#801d21', fg='White', font=("Arial", 30))
-saved_label.grid(row=4,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+saved_label = tkinter.Label(main_interface,text='', borderwidth=0, relief="solid", fg='White', font=("Arial", 15))
+saved_label.grid(row=7,column=30,rowspan=2,columnspan=6,pady=(0,5),padx=(0,10))
 
 btn_on=tkinter.Button(main_interface,text="Start",command=real_time,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
-btn_on.grid(row=27,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+btn_on.grid(row=31,column=0,columnspan=6,pady=(0,10),padx=(10,10))
 
 btn_off=tkinter.Button(main_interface,text="Stop",command=stop,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
-btn_off.grid(row=28,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+btn_off.grid(row=31,column=6,columnspan=6,pady=(0,10),padx=(0,10))
 
 btn_swtch=tkinter.Button(main_interface,text="Switch camera",command=switch_cam,width=20,height=2, borderwidth=0, relief="solid", bg='#567', fg='White')
-btn_swtch.grid(row=29,column=30,columnspan=6,pady=(0,10),padx=(0,10))
+btn_swtch.grid(row=31,column=12,columnspan=6,pady=(0,10),padx=(0,10))
 
-real_time()
+#----
+
+table = Frame(main_interface)
+table.grid(row=9,column=30,rowspan=23,pady=(10,10),padx=(0,10))
+
+scroll = Scrollbar(table)
+scroll.pack(side=RIGHT, fill=Y)
+
+scroll = Scrollbar(table,orient='horizontal')
+scroll.pack(side= BOTTOM,fill=X)
+
+my_table = ttk.Treeview(table,yscrollcommand=scroll.set, xscrollcommand =scroll.set,height=15)
+my_table.pack()
+
+scroll.config(command=my_table.yview)
+scroll.config(command=my_table.xview)
+
+#define our column
+ 
+my_table['columns'] = ('Plate_NO', 'Date', 'Time', 'Status')
+
+# format our column
+my_table.column("#0", width=0,  stretch=NO)
+my_table.column("Plate_NO",anchor=CENTER, width=70)
+my_table.column("Date",anchor=CENTER,width=70)
+my_table.column("Time",anchor=CENTER,width=70)
+my_table.column("Status",anchor=CENTER,width=70)
+
+#Create Headings 
+my_table.heading("#0",text="",anchor=CENTER)
+my_table.heading("Plate_NO",text="Plate_NO",anchor=CENTER)
+my_table.heading("Date",text="Date",anchor=CENTER)
+my_table.heading("Time",text="Time",anchor=CENTER)
+my_table.heading("Status",text="Status",anchor=CENTER)
+
+#----
+
 main_interface.mainloop()
